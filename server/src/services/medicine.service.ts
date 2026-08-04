@@ -2,13 +2,24 @@ import Medicine from "../models/medicine.model";
 
 interface AddMedicineData {
     user: string;
+
     medicineName: string;
-    dosage: string;
-    type: string;
+
+    strength: number;
+    unit: string;
+
+    dosageForm: string;
+
     frequency: string;
+
     reminderTimes: string[];
+
     startDate: Date;
+
     endDate: Date;
+
+    numberOfDays: number;
+
     instructions?: string;
 }
 
@@ -18,31 +29,34 @@ export const createMedicine = async (
     return await Medicine.create(medicineData);
 };
 
-export const getUserMedicines = async (userId: string) => {
-    return await Medicine.find({ user: userId }).sort({
+export const getUserMedicines = async (
+    userId: string
+) => {
+    return await Medicine.find({
+        user: userId,
+    }).sort({
         createdAt: -1,
     });
 };
 
-export const updateMedicine = async (
+export const updateMedicineById = async (
     medicineId: string,
     userId: string,
-    medicineData: Partial<AddMedicineData>
+    updateData: Partial<AddMedicineData>
 ) => {
     return await Medicine.findOneAndUpdate(
         {
             _id: medicineId,
             user: userId,
         },
-        medicineData,
+        updateData,
         {
             new: true,
-            runValidators: true,
         }
     );
 };
 
-export const deleteMedicine = async (
+export const deleteMedicineById = async (
     medicineId: string,
     userId: string
 ) => {

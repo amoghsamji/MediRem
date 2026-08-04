@@ -2,14 +2,26 @@ import mongoose, { Document, Schema } from "mongoose";
 
 export interface IMedicine extends Document {
     user: mongoose.Types.ObjectId;
+
     medicineName: string;
-    dosage: string;
-    type: string;
+
+    strength: number;
+    unit: string;
+
+    dosageForm: string;
+
     frequency: string;
+
     reminderTimes: string[];
+
     startDate: Date;
+
     endDate: Date;
+
+    numberOfDays: number;
+
     instructions?: string;
+
     isActive: boolean;
 }
 
@@ -27,15 +39,21 @@ const medicineSchema = new Schema<IMedicine>(
             trim: true,
         },
 
-        dosage: {
+        strength: {
+            type: Number,
+            required: true,
+        },
+
+        unit: {
             type: String,
             required: true,
             trim: true,
         },
 
-        type: {
+        dosageForm: {
             type: String,
             required: true,
+            trim: true,
         },
 
         frequency: {
@@ -46,6 +64,7 @@ const medicineSchema = new Schema<IMedicine>(
         reminderTimes: [
             {
                 type: String,
+                required: true,
             },
         ],
 
@@ -59,9 +78,16 @@ const medicineSchema = new Schema<IMedicine>(
             required: true,
         },
 
+        numberOfDays: {
+            type: Number,
+            required: true,
+            min: 1,
+        },
+
         instructions: {
             type: String,
             default: "",
+            trim: true,
         },
 
         isActive: {
