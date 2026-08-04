@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 
 import authRoutes from "./routes/auth.routes";
+import medicineRoutes from "./routes/medicine.routes";
 
 const app = express();
 
@@ -16,5 +17,6 @@ app.get("/", (_, res) => {
 });
 
 app.use("/api/auth", authRoutes);
+app.use("/api/medicines", medicineRoutes);
 
 export default app;
