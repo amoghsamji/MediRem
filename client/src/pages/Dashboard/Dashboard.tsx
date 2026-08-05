@@ -6,6 +6,8 @@ import { getMedicines } from "../../services/medicine.service";
 import type { Medicine } from "../../types/medicine";
 import Modal from "../../components/ui/Modal";
 import MedicineForm from "../../components/ui/MedicineForm";
+import { deleteMedicine } from "../../services/medicine.service";
+import toast from "react-hot-toast";
 
 
 import {
@@ -19,6 +21,8 @@ const Dashboard = () => {
     const [medicines, setMedicines] = useState<Medicine[]>([]);
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [selectedMedicine, setSelectedMedicine] = useState<Medicine | null>(null);
+const [isEditing, setIsEditing] = useState(false);
 
 
     const fetchMedicines = async () => {
@@ -48,6 +52,35 @@ const Dashboard = () => {
         }
 
     };
+
+    const handleEdit = (medicine: Medicine) => {
+    setSelectedMedicine(medicine);
+    setIsEditing(true);
+    setIsModalOpen(true);
+};
+
+const handleDelete = async (medicine: Medicine) => {
+    const confirmed = window.confirm(
+        `Delete ${medicine.medicineName}?`
+    );
+
+    if (!confirmed) return;
+
+    try {
+        await deleteMedicine(medicine._id);
+
+        toast.success("Medicine deleted");
+
+        fetchMedicines();
+
+    } catch (error) {
+
+        console.error(error);
+
+        toast.error("Failed to delete medicine");
+
+    }
+};
 
     useEffect(() => {
 
@@ -125,7 +158,12 @@ const Dashboard = () => {
                 ) : (
                     <div className="space-y-4">
                         {medicines.map((medicine) => (
-                            <MedicineCard key={medicine._id} medicine={medicine} />
+                            <MedicineCard
+    key={medicine._id}
+    medicine={medicine}
+    onEdit={handleEdit}
+    onDelete={handleDelete}
+/>
                         ))}
                     </div>
                 )}
@@ -138,12 +176,20 @@ const Dashboard = () => {
                 title="Add Medicine"
             >
                 <MedicineForm
-                    onSuccess={() => {
-                        setIsModalOpen(false);
-                        fetchMedicines();
-                    }}
-                    onCancel={() => setIsModalOpen(false)}
-                />
+    medicine={selectedMedicine}
+    isEditing={isEditing}
+    onSuccess={() => {
+        setIsModalOpen(false);
+        setSelectedMedicine(null);
+        setIsEditing(false);
+        fetchMedicines();
+    }}
+    onCancel={() => {
+        setIsModalOpen(false);
+        setSelectedMedicine(null);
+        setIsEditing(false);
+    }}
+/>
             </Modal>
 
         </DashboardLayout>

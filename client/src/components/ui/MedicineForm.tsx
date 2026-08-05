@@ -1,14 +1,20 @@
 import { useState } from "react";
 import toast from "react-hot-toast";
-import { addMedicine } from "../../services/medicine.service";
+import { addMedicine, updateMedicine, } from "../../services/medicine.service";
 const dayOptions = [3, 5, 7, 10, 14, 30];
+import type { Medicine } from "../../types/medicine";
+import { useEffect } from "react";
 
 interface MedicineFormProps {
+    medicine?: Medicine | null;
+    isEditing?: boolean;
     onSuccess: () => void;
     onCancel: () => void;
 }
 
 const MedicineForm = ({
+    medicine,
+    isEditing = false,
     onSuccess,
     onCancel,
 }: MedicineFormProps) => {
@@ -27,6 +33,26 @@ const MedicineForm = ({
         useCustomDays: false,
         instructions: "",
     });
+
+    useEffect(() => {
+
+    if (!medicine) return;
+
+    setFormData({
+        medicineName: medicine.medicineName,
+        strength: medicine.strength.toString(),
+        unit: medicine.unit,
+        dosageForm: medicine.dosageForm,
+        frequency: medicine.frequency,
+        reminderTimes: medicine.reminderTimes,
+        startDate: medicine.startDate.split("T")[0],
+        numberOfDays: medicine.numberOfDays,
+        customDays: medicine.numberOfDays.toString(),
+        useCustomDays: false,
+        instructions: medicine.instructions || "",
+    });
+
+}, [medicine]);
 
     const handleChange = (
         e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -77,17 +103,36 @@ const MedicineForm = ({
 
         try {
             setSubmitting(true);
-            await addMedicine({
-                medicineName: formData.medicineName,
-                strength: Number(formData.strength),
-                unit: formData.unit,
-                dosageForm: formData.dosageForm,
-                frequency: formData.frequency,
-                reminderTimes: formData.reminderTimes.filter(t => t !== ""),
-                startDate: formData.startDate,
-                numberOfDays: days,
-                instructions: formData.instructions,
-            });
+            const payload = {
+    medicineName: formData.medicineName,
+    strength: Number(formData.strength),
+    unit: formData.unit,
+    dosageForm: formData.dosageForm,
+    frequency: formData.frequency,
+    reminderTimes: formData.reminderTimes.filter(
+        (t) => t !== ""
+    ),
+    startDate: formData.startDate,
+    numberOfDays: days,
+    instructions: formData.instructions,
+};
+
+if (isEditing && medicine) {
+
+    await updateMedicine(
+        medicine._id,
+        payload
+    );
+
+    toast.success("Medicine updated successfully");
+
+} else {
+
+    await addMedicine(payload);
+
+    toast.success("Medicine added successfully");
+
+}
 
             toast.success("Medicine added successfully");
             onSuccess();
@@ -294,8 +339,11 @@ const MedicineForm = ({
                     className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg disabled:bg-blue-400 transition"
                     disabled={submitting}
                 >
-                    {submitting ? "Saving..." : "Save Medicine"}
-                </button>
+{submitting
+    ? "Saving..."
+    : isEditing
+        ? "Update Medicine"
+        : "Save Medicine"}                </button>
             </div>
         </form>
     );
