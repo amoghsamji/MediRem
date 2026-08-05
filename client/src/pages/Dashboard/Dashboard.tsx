@@ -1,14 +1,19 @@
 import { useEffect, useState } from "react";
+import toast from "react-hot-toast";
+
 import DashboardLayout from "../../components/layout/DashboardLayout";
 import StatCard from "../../components/ui/StatCard";
 import MedicineCard from "../../components/ui/MedicineCard";
-import { getMedicines } from "../../services/medicine.service";
-import type { Medicine } from "../../types/medicine";
 import Modal from "../../components/ui/Modal";
+import ConfirmModal from "../../components/ui/ConfirmModal";
 import MedicineForm from "../../components/ui/MedicineForm";
-import { deleteMedicine } from "../../services/medicine.service";
-import toast from "react-hot-toast";
 
+import {
+    getMedicines,
+    deleteMedicine,
+} from "../../services/medicine.service";
+
+import type { Medicine } from "../../types/medicine";
 
 import {
     Pill,
@@ -18,12 +23,22 @@ import {
 } from "lucide-react";
 
 const Dashboard = () => {
+
     const [medicines, setMedicines] = useState<Medicine[]>([]);
     const [loading, setLoading] = useState(true);
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [selectedMedicine, setSelectedMedicine] = useState<Medicine | null>(null);
-const [isEditing, setIsEditing] = useState(false);
 
+    const [isModalOpen, setIsModalOpen] = useState(false);
+
+    const [selectedMedicine, setSelectedMedicine] =
+        useState<Medicine | null>(null);
+
+    const [isEditing, setIsEditing] = useState(false);
+
+    const [deleteModalOpen, setDeleteModalOpen] =
+        useState(false);
+
+    const [medicineToDelete, setMedicineToDelete] =
+        useState<Medicine | null>(null);
 
     const fetchMedicines = async () => {
 
@@ -32,20 +47,16 @@ const [isEditing, setIsEditing] = useState(false);
             const response = await getMedicines();
 
             if (response.success) {
-
                 setMedicines(response.data);
-
             }
 
-        }
-
-        catch (error) {
+        } catch (error) {
 
             console.error(error);
 
-        }
+            toast.error("Failed to fetch medicines");
 
-        finally {
+        } finally {
 
             setLoading(false);
 
@@ -53,44 +64,79 @@ const [isEditing, setIsEditing] = useState(false);
 
     };
 
-    const handleEdit = (medicine: Medicine) => {
-    setSelectedMedicine(medicine);
-    setIsEditing(true);
-    setIsModalOpen(true);
-};
-
-const handleDelete = async (medicine: Medicine) => {
-    const confirmed = window.confirm(
-        `Delete ${medicine.medicineName}?`
-    );
-
-    if (!confirmed) return;
-
-    try {
-        await deleteMedicine(medicine._id);
-
-        toast.success("Medicine deleted");
-
-        fetchMedicines();
-
-    } catch (error) {
-
-        console.error(error);
-
-        toast.error("Failed to delete medicine");
-
-    }
-};
-
     useEffect(() => {
 
         fetchMedicines();
 
     }, []);
 
-    const activeMedicinesCount = medicines.filter(m => m.isActive).length;
+    const handleAddMedicine = () => {
+
+        setSelectedMedicine(null);
+
+        setIsEditing(false);
+
+        setIsModalOpen(true);
+
+    };
+
+    const handleEdit = (medicine: Medicine) => {
+
+        setSelectedMedicine(medicine);
+
+        setIsEditing(true);
+
+        setIsModalOpen(true);
+
+    };
+
+    const handleDelete = (medicine: Medicine) => {
+
+        setMedicineToDelete(medicine);
+
+        setDeleteModalOpen(true);
+
+    };
+
+    const confirmDelete = async () => {
+
+        if (!medicineToDelete) return;
+
+        try {
+
+            await deleteMedicine(
+                medicineToDelete._id
+            );
+
+            toast.success(
+                "Medicine deleted successfully"
+            );
+
+            fetchMedicines();
+
+        } catch (error) {
+
+            console.error(error);
+
+            toast.error("Failed to delete medicine");
+
+        } finally {
+
+            setDeleteModalOpen(false);
+
+            setMedicineToDelete(null);
+
+        }
+
+    };
+
+    const activeMedicinesCount =
+        medicines.filter(
+            medicine => medicine.isActive
+        ).length;
 
     return (
+
         <DashboardLayout>
 
             {/* Header */}
@@ -110,7 +156,7 @@ const handleDelete = async (medicine: Medicine) => {
                 </div>
 
                 <button
-                    onClick={() => setIsModalOpen(true)}
+                    onClick={handleAddMedicine}
                     className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-3 rounded-xl flex items-center gap-2 transition"
                 >
                     <Plus size={20} />
@@ -143,7 +189,7 @@ const handleDelete = async (medicine: Medicine) => {
 
             </div>
 
-            {/* Medicine List */}
+            {/* Medicines */}
 
             <div className="mt-12">
 
@@ -152,49 +198,105 @@ const handleDelete = async (medicine: Medicine) => {
                 </h2>
 
                 {loading ? (
-                    <p className="text-gray-500">Loading medicines...</p>
+
+                    <p className="text-gray-500">
+                        Loading medicines...
+                    </p>
+
                 ) : medicines.length === 0 ? (
-                    <p className="text-gray-500">No medicines added yet. Click "Add Medicine" to get started!</p>
+
+                    <p className="text-gray-500">
+                        No medicines added yet.
+                    </p>
+
                 ) : (
-                    <div className="space-y-4">
+
+                    <div className="space-y-5">
+
                         {medicines.map((medicine) => (
+
                             <MedicineCard
-    key={medicine._id}
-    medicine={medicine}
-    onEdit={handleEdit}
-    onDelete={handleDelete}
-/>
+                                key={medicine._id}
+                                medicine={medicine}
+                                onEdit={handleEdit}
+                                onDelete={handleDelete}
+                            />
+
                         ))}
+
                     </div>
+
                 )}
 
             </div>
 
+            {/* Add / Edit Modal */}
+
             <Modal
                 isOpen={isModalOpen}
-                onClose={() => setIsModalOpen(false)}
-                title="Add Medicine"
+                onClose={() => {
+
+                    setIsModalOpen(false);
+
+                    setSelectedMedicine(null);
+
+                    setIsEditing(false);
+
+                }}
+                title={
+                    isEditing
+                        ? "Edit Medicine"
+                        : "Add Medicine"
+                }
             >
+
                 <MedicineForm
-    medicine={selectedMedicine}
-    isEditing={isEditing}
-    onSuccess={() => {
-        setIsModalOpen(false);
-        setSelectedMedicine(null);
-        setIsEditing(false);
-        fetchMedicines();
-    }}
-    onCancel={() => {
-        setIsModalOpen(false);
-        setSelectedMedicine(null);
-        setIsEditing(false);
-    }}
-/>
+                    medicine={selectedMedicine}
+                    isEditing={isEditing}
+                    onSuccess={() => {
+
+                        setIsModalOpen(false);
+
+                        setSelectedMedicine(null);
+
+                        setIsEditing(false);
+
+                        fetchMedicines();
+
+                    }}
+                    onCancel={() => {
+
+                        setIsModalOpen(false);
+
+                        setSelectedMedicine(null);
+
+                        setIsEditing(false);
+
+                    }}
+                />
+
             </Modal>
+
+            {/* Delete Modal */}
+
+            <ConfirmModal
+                isOpen={deleteModalOpen}
+                title="Delete Medicine"
+                message={`Are you sure you want to delete "${medicineToDelete?.medicineName}"?`}
+                onConfirm={confirmDelete}
+                onCancel={() => {
+
+                    setDeleteModalOpen(false);
+
+                    setMedicineToDelete(null);
+
+                }}
+            />
 
         </DashboardLayout>
 
     );
+
 };
 
 export default Dashboard;
